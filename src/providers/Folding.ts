@@ -1,6 +1,6 @@
 import { FoldingRangeProvider, FoldingRange, TextDocument } from "vscode";
 import { parsedDocuments } from "../extension";
-import { StructToken } from "../afterwriting-parser";
+import { StructToken } from "../parser";
 
 export class FountainFoldingRangeProvider implements FoldingRangeProvider {
 	provideFoldingRanges(document: TextDocument): FoldingRange[] {

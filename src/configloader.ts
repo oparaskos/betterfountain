@@ -1,6 +1,8 @@
 import * as vscode from 'vscode';
 
 export class FountainConfig{
+    merge_multiple_empty_lines: boolean;
+
     refresh_stats_on_save: boolean;
     number_scenes_on_save: boolean;
     embolden_scene_headers:boolean;
@@ -78,12 +80,18 @@ export var changeFountainUIPersistence = function(key:"outline_visibleSynopses"|
     }
 }
 
-export var getFountainConfig = function(docuri:vscode.Uri):FountainConfig{
-    if(!docuri && vscode.window.activeTextEditor != undefined) 
-        docuri = vscode.window.activeTextEditor.document.uri;
+export function getFountainConfigUri(): vscode.Uri | undefined {
+    if(vscode.window.activeTextEditor != undefined) 
+        return vscode.window.activeTextEditor.document.uri;
+    return undefined;
+}
+
+export function getFountainConfig(configUri: vscode.Uri | undefined = undefined) :FountainConfig{
+    const docuri = configUri || getFountainConfigUri();
     var pdfConfig = vscode.workspace.getConfiguration("fountain.pdf", docuri);
     var generalConfig = vscode.workspace.getConfiguration("fountain.general", docuri);
     return {
+        merge_multiple_empty_lines: generalConfig.mergeMultipleEmptyLines,
         number_scenes_on_save: generalConfig.numberScenesOnSave,
         refresh_stats_on_save: generalConfig.refreshStatisticsOnSave,
         embolden_scene_headers: pdfConfig.emboldenSceneHeaders,

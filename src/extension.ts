@@ -2,10 +2,21 @@
 import { getFountainConfig, changeFountainUIPersistence, uiPersistence, initFountainUIPersistence, ExportConfig } from "./configloader";
 import { ExtensionContext, languages, TextDocument } from 'vscode';
 import * as vscode from 'vscode';
-import * as afterparser from "./afterwriting-parser";
 import { GeneratePdf } from "./pdf/pdf";
 import { secondsToString, overwriteSceneNumbers, updateSceneNumbers, openFile, shiftScenes } from "./utils";
 import * as telemetry from "./telemetry";
+import {ParsedOutput, parse} from './parser';
+import { FountainFoldingRangeProvider } from "./providers/Folding";
+import { FountainCompletionProvider } from "./providers/Completion";
+import { FountainSymbolProvider } from "./providers/Symbols";
+import { showDecorations, clearDecorations } from "./providers/Decorations";
+import { createPreviewPanel, previews, FountainPreviewSerializer, getPreviewsToUpdate } from "./providers/Preview";
+import { createStatisticsPanel, FountainStatsPanelserializer as FountainStatsPanelSerializer, getStatisticsPanels, refreshPanel, updateDocumentVersion } from "./providers/Statistics";
+import { FountainOutlineTreeDataProvider } from "./providers/Outline";
+import { performance } from "perf_hooks";
+import { exportHtml } from "./providers/StaticHtml";
+import { FountainCheatSheetWebviewViewProvider } from "./providers/Cheatsheet";
+import { generateHtml } from "./parser/generateHtml";
 
 
 export class FountainCommandTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
@@ -83,23 +94,6 @@ export class FountainCommandTreeDataProvider implements vscode.TreeDataProvider<
 	}
 }
 
-
-
-
-
-import { FountainFoldingRangeProvider } from "./providers/Folding";
-import { FountainCompletionProvider } from "./providers/Completion";
-import { FountainSymbolProvider } from "./providers/Symbols";
-import { showDecorations, clearDecorations } from "./providers/Decorations";
-
-import { createPreviewPanel, previews, FountainPreviewSerializer, getPreviewsToUpdate } from "./providers/Preview";
-import { createStatisticsPanel, FountainStatsPanelserializer as FountainStatsPanelSerializer, getStatisticsPanels, refreshPanel, updateDocumentVersion } from "./providers/Statistics";
-import { FountainOutlineTreeDataProvider } from "./providers/Outline";
-import { performance } from "perf_hooks";
-import { exportHtml } from "./providers/StaticHtml";
-import { FountainCheatSheetWebviewViewProvider } from "./providers/Cheatsheet";
-
-
 /**
  * Approximates length of the screenplay based on the overall length of dialogue and action tokens
  */
@@ -168,7 +162,8 @@ export async function exportPdf(showSaveDialog:boolean = true, openFileOnSave:bo
 	var config = getFountainConfig(activeFountainDocument());
 	telemetry.reportTelemetry("command:fountain.exportpdf");
 
-	var parsed = await afterparser.parse(editor.document.getText(), config, false);
+	
+	var parsed = await parse(editor.document.getText(), config);
 	
 	var exportconfig : ExportConfig = {highlighted_characters: []}
 	var filename = editor.document.fileName.replace(/(\.(((better)?fountain)|spmd|txt))$/, ''); //screenplay.fountain -> screenplay
@@ -328,7 +323,7 @@ export function activate(context: ExtensionContext) {
 		.then(doc => vscode.window.showTextDocument(doc))
         .then(editor => {
             let editBuilder = (textEdit:vscode.TextEditorEdit) => {	
-                textEdit.insert(new vscode.Position(0,0), JSON.stringify(afterparser.parse(fountain, getFountainConfig(uri), false), null, 4));
+                textEdit.insert(new vscode.Position(0,0), JSON.stringify(parse(fountain, getFountainConfig(uri)), null, 4));
 			};
             return editor.edit( editBuilder, {
                     undoStopBefore: true,
@@ -444,10 +439,10 @@ vscode.workspace.onDidChangeConfiguration(change => {
 
 
 //var lastFountainDocument:TextDocument;
-export var parsedDocuments = new Map<string, afterparser.parseoutput>();
+export var parsedDocuments = new Map<string, ParsedOutput>();
 let lastParsedUri = "";
 
-export function activeParsedDocument(): afterparser.parseoutput {
+export function activeParsedDocument(): ParsedOutput {
 	var texteditor = getEditor(activeFountainDocument());
 	if(texteditor){
 		return parsedDocuments.get(texteditor.document.uri.toString()); 
@@ -482,14 +477,15 @@ export function parseDocument(document: TextDocument) {
 	clearDecorations();
 
 	var previewsToUpdate = getPreviewsToUpdate(document.uri)
-	var output = afterparser.parse(document.getText(), getFountainConfig(document.uri), previewsToUpdate.length>0)
-
+	var config = getFountainConfig(document.uri);
+	var output = parse(document.getText(), config)
 	
 	if (previewsToUpdate) {
 		//lastFountainDocument = document;
+		var html = generateHtml(output, config);
 		for (let i = 0; i < previewsToUpdate.length; i++) {
-			previewsToUpdate[i].panel.webview.postMessage({ command: 'updateTitle', content: output.titleHtml });
-			previewsToUpdate[i].panel.webview.postMessage({ command: 'updateScript', content: output.scriptHtml });
+			previewsToUpdate[i].panel.webview.postMessage({ command: 'updateTitle', content: html.titleHtml });
+			previewsToUpdate[i].panel.webview.postMessage({ command: 'updateScript', content: html.scriptHtml });
 			
 			if(previewsToUpdate[i].dynamic) {
 
@@ -537,7 +533,7 @@ export function parseDocument(document: TextDocument) {
 	let t1 = performance.now()
 	let parseTime = t1-t0;
 	if(parseTelemetryLimiter == parseTelemetryFrequency){
-		telemetry.reportTelemetry("afterparser.parsing", undefined, { linecount: document.lineCount, parseduration: parseTime });
+		telemetry.reportTelemetry("parsing", undefined, { linecount: document.lineCount, parseduration: parseTime });
 	}
 	parseTelemetryLimiter--;
 	if(parseTelemetryLimiter == 0 ) parseTelemetryLimiter = parseTelemetryFrequency;

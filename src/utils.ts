@@ -1,10 +1,11 @@
 import * as vscode from "vscode";
 import { FountainStructureProperties } from "./extension";
-import * as parser from "./afterwriting-parser";
+import { scene_heading } from "./parser/regex";
 import * as path from "path";
 import * as telemetry from "./telemetry";
 import * as sceneNumbering from './scenenumbering';
 import * as fs from "fs";
+import { ParsedOutput } from "./parser";
 
 //var syllable = require('syllable');
 
@@ -183,7 +184,7 @@ export const updateSceneNumbers = () => {
 }
 
 const clearSceneNumbers = (fullText: string): string => {
-	const regexSceneHeadings = new RegExp(parser.regex.scene_heading.source, "igm");
+	const regexSceneHeadings = new RegExp(scene_heading.source, "igm");
 	const newText = fullText.replace(regexSceneHeadings, (heading: string) => heading.replace(/ #.*#$/, ""))
 	return newText
 }
@@ -192,7 +193,7 @@ const clearSceneNumbers = (fullText: string): string => {
 const writeSceneNumbers = (fullText: string) => {
 	// collect existing numbers (they mostly shouldn't change)
 	const oldNumbers: string[] = [];
-	const regexSceneHeadings = new RegExp(parser.regex.scene_heading.source, "igm");
+	const regexSceneHeadings = new RegExp(scene_heading.source, "igm");
 	const numberingSchema = sceneNumbering.makeSceneNumberingSchema(sceneNumbering.SceneNumberingSchemas.Standard);
 	var m;
 	while (m = regexSceneHeadings.exec(fullText)) {
@@ -224,7 +225,7 @@ const writeSceneNumbers = (fullText: string) => {
 }
 
 /** Shifts scene/s at the selected text up or down */
-export const shiftScenes = (editor: vscode.TextEditor, parsed: parser.parseoutput, direction: number) => {
+export const shiftScenes = (editor: vscode.TextEditor, parsed: ParsedOutput, direction: number) => {
 
 	var numNewlinesAtEndRequired = 0;
 	const selectSceneAt = (sel: vscode.Selection): vscode.Selection => {

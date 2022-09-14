@@ -4,9 +4,9 @@ import * as fs from "fs";
 import { getEditor, activeFountainDocument } from "../extension";
 import { FountainConfig, getFountainConfig } from "../configloader";
 import { assetsPath } from "../utils";
-import * as afterparser from "../afterwriting-parser";
 import { retrieveScreenPlayStatistics } from "../statistics";
 import * as telemetry from "../telemetry";
+import { parse } from "../parser";
 
 interface statisticsPanel{
     uri:string;
@@ -41,7 +41,7 @@ export function removeStatisticsPanel(id:Number){
 
 export async function refreshPanel(statspanel:vscode.WebviewPanel, document:vscode.TextDocument, config:FountainConfig){
     statspanel.webview.postMessage({ command:"updateversion", version:document.version, loading:true});
-    var parsed = afterparser.parse(document.getText(), config, false);
+    var parsed = parse(document.getText(), config);
     const stats = await retrieveScreenPlayStatistics(document.getText(), parsed, config, undefined);
     statspanel.webview.postMessage({ command: 'updateStats', content:stats, version:document.version});
 }

@@ -8,7 +8,7 @@ import helpers from "../helpers";
 import { openFile, revealFile, trimCharacterExtension, wordToColor } from "../utils";
 import * as he from 'he';
 import * as addTextbox from 'textbox-for-pdfkit';
-import { regex } from "../afterwriting-parser";
+import { regex } from "../parser";
 // import * as blobUtil from "blob-util";
 export class Options {
     filepath: string;

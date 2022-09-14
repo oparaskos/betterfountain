@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import { parsedDocuments } from "../extension";
 import { getCharactersWhoSpokeBeforeLast, addForceSymbolToCharacter } from "../utils";
 import username = require("username");
-import { titlePageDisplay } from "../afterwriting-parser";
+import { titlePageDisplay } from "../parser/titlePageDisplay";
 var fontnames: any[];
 const fontFinder = require('font-finder');
 var userfullname: string;
@@ -77,11 +77,11 @@ const pagedrawings = {
 ║   ███║
 ╚══════╝`,
 watermark: `
-╔══════╗
-║    ⋰ ║
-║  ⋰   ║
-║⋰     ║
-╚══════╝`,
+╔═══════
+║     ⋰║
+║   ⋰  ║
+║ ⋰    ║
+⋰══════╝`,
 header: `
 ╚══════╝
 ╔══════╗

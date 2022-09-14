@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
-import * as afterparser from '../afterwriting-parser';
 import { activeFountainDocument, activeParsedDocument, getEditor } from '../extension';
 import * as config from '../configloader';
+import { StructToken } from '../parser';
 
 export class FountainOutlineTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
 	public readonly onDidChangeTreeDataEmitter: vscode.EventEmitter<vscode.TreeItem | null> =
@@ -53,13 +53,13 @@ function buildTree(): OutlineTreeItem {
 	return root;
 }
 
-function makeTreeItem(token: afterparser.StructToken, parent: OutlineTreeItem): OutlineTreeItem {
+function makeTreeItem(token: StructToken, parent: OutlineTreeItem): OutlineTreeItem {
 	var item: OutlineTreeItem;
 	if (token.section)
 		item = new SectionTreeItem(token, parent);
 	else if(token.isnote)
 		if(config.uiPersistence.outline_visibleNotes)
-			item = new NoteTreeItem({note:token.text, line: token.id.substring(1) },parent);
+			item = new NoteTreeItem({note:token.text, line: parseInt(token.id.substring(1), 10) },parent);
 		else
 			return undefined;
 	else
@@ -71,9 +71,9 @@ function makeTreeItem(token: afterparser.StructToken, parent: OutlineTreeItem): 
 
 	if (token.children){
 		if(passthrough)
-			parent.children.push(...token.children.map((tok: afterparser.StructToken) => makeTreeItem(tok, parent)));
+			parent.children.push(...token.children.map((tok: StructToken) => makeTreeItem(tok, parent)));
 		else
-			item.children.push(...token.children.map((tok: afterparser.StructToken) => makeTreeItem(tok, item)));
+			item.children.push(...token.children.map((tok: StructToken) => makeTreeItem(tok, item)));
 	}
 	
 
@@ -147,7 +147,7 @@ class OutlineTreeItem extends vscode.TreeItem {
 }
 
 class SectionTreeItem extends OutlineTreeItem {
-	constructor(token: afterparser.StructToken, parent: OutlineTreeItem) {
+	constructor(token: StructToken, parent: OutlineTreeItem) {
 		super(token.text, token.id, parent)
 
 		var sectionDepth = Math.min((token.id.match(/\//g) || []).length, 5); //maximum depth is 5 - anything deeper is the same color as 5
@@ -159,7 +159,7 @@ class SectionTreeItem extends OutlineTreeItem {
 }
 
 class SceneTreeItem extends OutlineTreeItem {
-	constructor(token: afterparser.StructToken, parent: OutlineTreeItem) {
+	constructor(token: StructToken, parent: OutlineTreeItem) {
 		super(token.text, token.id, parent)
 
 		this.iconPath = __filename + '/../../../assets/scene.svg';

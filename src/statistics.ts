@@ -1,4 +1,4 @@
-import { parseoutput, regex, StructToken } from "./afterwriting-parser"
+import { ParsedOutput, regex, StructToken } from "./parser"
 import { GeneratePdf } from "./pdf/pdf"
 import { ExportConfig, FountainConfig } from "./configloader"
 import { pdfstats } from "./pdf/pdfmaker"
@@ -121,7 +121,7 @@ function gradeToAge(grade:number) {
     return age(Math.round(grade + 5))
 }
 
-const createCharacterStatistics = (parsed: parseoutput): characterStatistics => {
+const createCharacterStatistics = (parsed: ParsedOutput): characterStatistics => {
     const dialoguePieces: dialoguePiece[] = [];
     for (var i=0; i<parsed.tokens.length; i++)
     {
@@ -219,7 +219,7 @@ const createCharacterStatistics = (parsed: parseoutput): characterStatistics => 
     }
 }
 
-const createLocationStatistics = (parsed: parseoutput): locationStatistics => {
+const createLocationStatistics = (parsed: ParsedOutput): locationStatistics => {
     const locationSlugs = [...parsed.properties.locations.keys()];
     return {
         locationsCount: locationSlugs.length,
@@ -246,7 +246,7 @@ const createLocationStatistics = (parsed: parseoutput): locationStatistics => {
     }
 }
 
-const createSceneStatistics = (parsed: parseoutput): sceneStatistics => {
+const createSceneStatistics = (parsed: ParsedOutput): sceneStatistics => {
     const sceneStats: singleSceneStatistic[] = []
     parsed.tokens.forEach ((tok) => {
         if (tok.type==="scene_heading")
@@ -302,7 +302,7 @@ function locationtime(val:string):string{
     return "unspecified";
 }
 
-const getLengthChart = (parsed:parseoutput):{action:lengthchartitem[], dialogue:lengthchartitem[], durationByProp:any, characters:dialoguechartitem[][], scenes:sceneitem[], characternames:string[], monologues:number} => {
+const getLengthChart = (parsed:ParsedOutput):{action:lengthchartitem[], dialogue:lengthchartitem[], durationByProp:any, characters:dialoguechartitem[][], scenes:sceneitem[], characternames:string[], monologues:number} => {
     let action:lengthchartitem[] = [{line:0, length: 0, scene:undefined }]
     let dialogue:lengthchartitem[] = [{line:0, length: 0, scene:undefined }]
     let characters = new Map<string, dialoguechartitem[]>();
@@ -404,7 +404,7 @@ const getLineCountWithoutWhitespace = (script:string): number =>{
     return ((script || '').match(/^.*\S.*$/gm) || []).length 
 }
 
-const createLengthStatistics = (script: string, pdf:pdfstats, parsed:parseoutput): lengthStatistics => {
+const createLengthStatistics = (script: string, pdf:pdfstats, parsed:ParsedOutput): lengthStatistics => {
     return {
         characters: getCharacterCount(script),
         characterswithoutwhitespace: getCharacterCountWithoutWhitespace(script),
@@ -417,7 +417,7 @@ const createLengthStatistics = (script: string, pdf:pdfstats, parsed:parseoutput
     }
 }
 
-const createDurationStatistics = (parsed: parseoutput): durationStatistics => {
+const createDurationStatistics = (parsed: ParsedOutput): durationStatistics => {
     let lengthcharts =  getLengthChart(parsed);
     console.log("Created duration stats");
     return {
@@ -442,7 +442,7 @@ function mapToObject(map:any):any{
     return jsonObject;
 }
 
-export const retrieveScreenPlayStatistics = async (script: string, parsed: parseoutput, config:FountainConfig, exportconfig:ExportConfig): Promise<screenPlayStatistics> => {
+export const retrieveScreenPlayStatistics = async (script: string, parsed: ParsedOutput, config:FountainConfig, exportconfig:ExportConfig): Promise<screenPlayStatistics> => {
     let pdfstats = await GeneratePdf("$STATS$", config, exportconfig, parsed, undefined);
     let pdfmap = mapToObject(pdfstats.linemap);
     return {

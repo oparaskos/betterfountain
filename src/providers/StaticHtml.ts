@@ -1,10 +1,11 @@
 import { getFountainConfig } from "../configloader";
 import { activeFountainDocument, getEditor } from "../extension";
-import * as afterparser from "../afterwriting-parser";
 import { fileToBase64, openFile, revealFile } from "../utils";
 import * as vscode from "vscode";
 import * as fs from "fs";
 import * as path from "path";
+import { parse } from "../parser";
+import { generateHtml } from "../parser/generateHtml";
 
 export async function exportHtml(){
 	var editor = getEditor(activeFountainDocument());
@@ -16,8 +17,8 @@ export async function exportHtml(){
 				defaultUri: saveuri
 			});
     var fountainconfig = getFountainConfig(editor.document.uri);
-	var output = afterparser.parse(editor.document.getText(), fountainconfig , true);
-
+	var output = parse(editor.document.getText(), fountainconfig);
+    var html = generateHtml(output, fountainconfig);
     let extensionpath = vscode.extensions.getExtension("piersdeseilligny.betterfountain").extensionPath;
     let htmlpath = path.join(extensionpath, 'assets', 'staticexport.html');
 	var rawhtml =  fs.readFileSync(htmlpath, 'utf8');
@@ -46,13 +47,13 @@ export async function exportHtml(){
                      .replace("$COURIERPRIME-ITALIC$", courierprimeB64_italic)
                      .replace("$COURIERPRIME-BOLDITALIC$", courierprimeB64_bolditalic);
 
-    if(output.titleHtml){
-        rawhtml = rawhtml.replace("$TITLEPAGE$", output.titleHtml);
+    if(html.titleHtml){
+        rawhtml = rawhtml.replace("$TITLEPAGE$", html.titleHtml);
     }
     else{
         rawhtml = rawhtml.replace("$TITLEDISPLAY$", "hidden")
     }
-    rawhtml = rawhtml.replace("$SCREENPLAY$", output.scriptHtml);
+    rawhtml = rawhtml.replace("$SCREENPLAY$", html.scriptHtml);
 	vscode.workspace.fs.writeFile(filepath, Buffer.from(rawhtml)).then(()=>{
         let open = "Open";
         let reveal = "Reveal in File Explorer";

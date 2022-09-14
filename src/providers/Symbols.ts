@@ -1,7 +1,7 @@
 import { parsedDocuments } from "../extension";
 import { secondsToMinutesString } from "../utils";
 import * as vscode from "vscode";
-import * as afterparser from "../afterwriting-parser";
+import { StructToken } from "../parser";
 
 export class FountainSymbolProvider implements vscode.DocumentSymbolProvider{
 	provideDocumentSymbols(document: vscode.TextDocument): vscode.DocumentSymbol[] {
@@ -10,7 +10,7 @@ export class FountainSymbolProvider implements vscode.DocumentSymbolProvider{
 		var scenecounter = 0;
 
 		//hierarchyend is the last line of the token's hierarchy. Last line of document for the root, last line of current section, etc...
-		function symbolFromStruct(token:afterparser.StructToken, nexttoken:afterparser.StructToken, hierarchyend:number):{symbol:vscode.DocumentSymbol, length:number}{
+		function symbolFromStruct(token:StructToken, nexttoken:StructToken, hierarchyend:number):{symbol:vscode.DocumentSymbol, length:number}{
 			var returnvalue:{symbol:vscode.DocumentSymbol, length:number} = {symbol:undefined, length:0};
 			var start = token.range.start;
 			var end = document.lineAt(hierarchyend-1).range.end;
